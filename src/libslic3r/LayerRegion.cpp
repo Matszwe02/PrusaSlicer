@@ -104,6 +104,7 @@ void LayerRegion::make_perimeters(
 
     // Cummulative sum of polygons over all the regions.
     const ExPolygons *lower_slices = this->layer()->lower_layer ? &this->layer()->lower_layer->lslices : nullptr;
+    const ExPolygons *upper_slices = this->layer()->upper_layer ? &this->layer()->upper_layer->lslices : nullptr;
     // Cache for offsetted lower_slices
     Polygons          lower_layer_polygons_cache;
 
@@ -117,6 +118,7 @@ void LayerRegion::make_perimeters(
                 params,
                 surface,
                 lower_slices,
+                upper_slices,
                 lower_layer_polygons_cache,
                 // output:
                 m_perimeters,
@@ -128,6 +130,7 @@ void LayerRegion::make_perimeters(
                 params,
                 surface,
                 lower_slices,
+                upper_slices,
                 lower_layer_polygons_cache,
                 // output:
                 m_perimeters,
