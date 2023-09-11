@@ -75,7 +75,7 @@ jobs:
 
     - name: Build PrusaSlicer dependencies
       run: |
-        cd PrusaSlicer/deps
+        cd D:\a\PrusaSlicer\PrusaSlicer\deps
         mkdir build
         cd build
         cmake .. -G "Visual Studio 16 2019" -DDESTDIR="C:\path_where_you_want_to_build_deps,_not_inside_the_PrusaSlicer_repo"
@@ -83,11 +83,11 @@ jobs:
 
     - name: Build PrusaSlicer
       run: |
-        cd PrusaSlicer
+        cd D:\a\PrusaSlicer\PrusaSlicer
         cmake --build . --config Release
 
     - name: Upload PrusaSlicer artifact
       uses: actions/upload-artifact@v2
       with:
         name: PrusaSlicer
-        path: PrusaSlicer/build/PrusaSlicer.exe
+        path: D:\a\PrusaSlicer\PrusaSlicer/build/PrusaSlicer.exe
