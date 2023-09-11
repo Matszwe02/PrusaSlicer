@@ -3,7 +3,7 @@ name: CI Windows x64
 on:
   push:
     branches:
-      - CI
+      - master
 
 jobs:
   build_dep:
