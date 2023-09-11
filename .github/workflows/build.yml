@@ -1,106 +1,121 @@
-name: CI Windows x64
+name: Build Test
 
 on:
   push:
-    branches:
-      - master
+    branches: [ "master", "workflow" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
-  build_dep:
-    runs-on: windows-latest
-
+  linux:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: 0. Prerequisities
+      run: sudo apt-get install -y git build-essential autoconf cmake libglu1-mesa-dev libgtk-3-dev libdbus-1-dev
+    - name: 1. Cloning the repository
+      uses: actions/checkout@v3
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        ref: 'CI'
-    - uses: ilammy/msvc-dev-cmd@v1
-    - name: mkdir in deps
-      run: mkdir deps/build
-    - name: cmake and make deps
-      working-directory: ./deps/build
+        key: ${{ runner.os }}
+    - name: Determine dependency hash
+      id: dephash
+      run: echo dephash=$(git rev-parse HEAD:deps) >> $GITHUB_OUTPUT
+    - name: Cache Dependencies
+      id: cache-dependencies
+      uses: actions/cache@v3
+      with:
+        path: deps/build/destdir
+        key: dependencycache-${{ runner.os }}-${{ steps.dephash.outputs.dephash }}
+    - name: Cache Download Files
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      id: cache-download
+      uses: actions/cache@v3
+      with:
+        path: deps/download
+        key: downloadcache-${{ runner.os }}-${{ github.run_id }}
+        restore-keys: |
+          downloadcache-${{ runner.os }}
+    - name: 2. Building dependencies
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
       run: |
-        cmake .. -G "Visual Studio 16 2019" -A x64
-        msbuild /m ALL_BUILD.vcxproj
-    - name: Upload artifact
-      uses: actions/upload-artifact@v1.0.0
-      with:
-        name: deps_win
-        path: ./deps/build/destdir/
-
-  build:
-    runs-on: windows-latest
-    needs: build_dep
-
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        cd deps
+        mkdir -p build
+        cd build
+        cmake .. -DDEP_WX_GTK3=ON -DDEP_DOWNLOAD_DIR=$(pwd)/../download
+        make
+        cd ../..
+    - name: 3. Building PrusaSlicer
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        mkdir build
+        cd build
+        cmake .. -DSLIC3R_STATIC=1 -DSLIC3R_GTK=3 -DSLIC3R_PCH=OFF -DCMAKE_PREFIX_PATH=$(pwd)/../deps/build/destdir/usr/local
+        make -j $(nproc)
+  macos:
+    runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: ilammy/msvc-dev-cmd@v1
-    - name: update submodule profiles
-      working-directory: ./resources/profiles
-      run: git submodule update
-    - name: change date in version
-      shell: powershell
-      run: (Get-Content version.inc) | Foreach-Object {$_ -replace "\+UNKNOWN", ("_" + [datetime]::Today.ToString("yyyy-MM-dd"))} | Set-Content version.inc
-    - name: mkdir in deps directory
-      run: mkdir deps/destdir
-    - name: download deps
-      uses: actions/download-artifact@v1
+    - uses: actions/checkout@v3
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        name: deps_win
-        path: deps/destdir
-    - name: echo dir deps
-      run: dir deps
-    - name: echo dir deps destdir
-      run: dir deps/destdir
-    - name: mkdir
-      run: mkdir build
-    - name: cmake
-      working-directory: ./build
-      run: cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH="d:\a\SuperSlicer\SuperSlicer\deps\destdir\usr\local"
-    - name: make
-      working-directory: ./build
-      run: msbuild /m /P:Configuration=Release INSTALL.vcxproj
-    - name: create directory and copy into it
-      working-directory: ./build
-      run: ls
-    - name: create directory and copy into it
-      working-directory: ./build
-      shell: powershell
-        #todo: add the opengl folder
-      run: mkdir package
-    - name: copy from release
-      working-directory: ./build
-      shell: powershell
-      run: '(new-object System.Net.WebClient).DownloadFile("https://github.com/supermerill/SuperSlicer/releases/download/2.2.53.3/SuperSlicer_2.2.53.3_win64_20201005.zip", "SuperSlicer_2.2.53.3_win64_20201005.zip")'
-    - name: unzip
-      working-directory: ./build
-      shell: cmd
-      run: '"C:/Program Files/7-Zip/7z.exe" x SuperSlicer_2.2.53.3_win64_20201005.zip'
-    - name: copy old release content
-      working-directory: ./build
-      shell: cmd
-      run: xcopy /RCYIE SuperSlicer_2.2.53.3_win64_20201005\* package\
-    - name: copy new resources
-      working-directory: ./build
-      shell: cmd
-      run: xcopy /RCYIE ..\resources package\resources
-    - name: copy dll
-      working-directory: ./build
-      shell: cmd
-      run: xcopy /RCYIE src\release\*.dll package\
-    - name: copy exe
-      working-directory: ./build
-      shell: cmd
-      run: xcopy /RCYIE src\release\*.exe package\
-    - name: copy ms runtime
-      working-directory: ./build
-      shell: cmd
-      run: xcopy /RCYIE c:\windows\system32\VCRUNTIME140* package\
-#    - name: create zip
-#      working-directory: ./build
-#      shell: cmd
-#      run: '"C:/Program Files/7-Zip/7z.exe" a -tzip nightly.zip *'
-    - name: Upload artifact
-      uses: actions/upload-artifact@v1.0.0
+        key: ${{ runner.os }}
+    - name: Determine dependency hash
+      id: dephash
+      run: echo dephash=$(git rev-parse HEAD:deps) >> $GITHUB_OUTPUT
+    - name: Cache Dependencies
+      id: cache-dependencies
+      uses: actions/cache@v3
       with:
-        name: nightly_win64
-        path: build/package/
+        path: deps/build/destdir
+        key: dependencycache-${{ runner.os }}-${{ steps.dephash.outputs.dephash }}
+    - name: Cache Download Files
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      id: cache-download
+      uses: actions/cache@v3
+      with:
+        path: deps/download
+        key: downloadcache-${{ runner.os }}-${{ github.run_id }}
+        restore-keys: |
+          downloadcache-${{ runner.os }}
+    - name: Dependencies
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+        cd deps
+        mkdir build
+        cd build
+        cmake .. -DDEP_DOWNLOAD_DIR=$(pwd)/../download
+        make
+        cd ../..
+    - name: Building PrusaSlicer
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../deps/build/destdir/usr/local
+        make -j $(sysctl -n hw.logicalcpu)
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      #- name: Relocate workspace
+      #run: |
+      #  md c:\PrusaSlicer
+      #  xcopy . c:\PrusaSlicer /s/h
+    - name: Determine dependency hash
+      id: dephash
+      run: echo dephash=$(git rev-parse HEAD:deps) >> $GITHUB_OUTPUT
+    - name: Determine checkout directory
+      id: cwd
+      run: echo cwd=$(cd) >> $GITHUB_OUTPUT
+    - name: Run the automatic build script
+      run: |
+        c:
+        md \PrusaSlicer
+        cd \PrusaSlicer
+        echo ./build_win.bat -d=..\PrusaSlicer-deps -r=none -v 17
+        echo $GITHUB_WORKSPACE
