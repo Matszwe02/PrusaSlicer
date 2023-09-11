@@ -87,6 +87,7 @@ jobs:
     - name: Install CMake
       run: |
         choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
 
     - name: Build PrusaSlicer dependencies
