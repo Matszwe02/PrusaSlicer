@@ -3,10 +3,11 @@ name: Build Test
 on:
   push:
     branches: [ "master", "workflow" ]
-  pull_request:
-    branches: [ "master" ]
+  workflow_dispatch:
+    
 
 jobs:
+
   linux:
     runs-on: ubuntu-latest
     steps:
@@ -53,51 +54,7 @@ jobs:
         cd build
         cmake .. -DSLIC3R_STATIC=1 -DSLIC3R_GTK=3 -DSLIC3R_PCH=OFF -DCMAKE_PREFIX_PATH=$(pwd)/../deps/build/destdir/usr/local
         make -j $(nproc)
-  macos:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1.2
-      with:
-        key: ${{ runner.os }}
-    - name: Determine dependency hash
-      id: dephash
-      run: echo dephash=$(git rev-parse HEAD:deps) >> $GITHUB_OUTPUT
-    - name: Cache Dependencies
-      id: cache-dependencies
-      uses: actions/cache@v3
-      with:
-        path: deps/build/destdir
-        key: dependencycache-${{ runner.os }}-${{ steps.dephash.outputs.dephash }}
-    - name: Cache Download Files
-      if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      id: cache-download
-      uses: actions/cache@v3
-      with:
-        path: deps/download
-        key: downloadcache-${{ runner.os }}-${{ github.run_id }}
-        restore-keys: |
-          downloadcache-${{ runner.os }}
-    - name: Dependencies
-      if: steps.cache-dependencies.outputs.cache-hit != 'true'
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
-        cd deps
-        mkdir build
-        cd build
-        cmake .. -DDEP_DOWNLOAD_DIR=$(pwd)/../download
-        make
-        cd ../..
-    - name: Building PrusaSlicer
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../deps/build/destdir/usr/local
-        make -j $(sysctl -n hw.logicalcpu)
+        
   windows:
     runs-on: windows-latest
     steps:
@@ -119,3 +76,34 @@ jobs:
         cd \PrusaSlicer
         echo ./build_win.bat -d=..\PrusaSlicer-deps -r=none -v 17
         echo $GITHUB_WORKSPACE
+        
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install CMake
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        refreshenv
+
+    - name: Build PrusaSlicer dependencies
+      run: |
+        cd PrusaSlicer/deps
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -DDESTDIR="C:\path_where_you_want_to_build_deps,_not_inside_the_PrusaSlicer_repo"
+        msbuild /m ALL_BUILD.vcxproj
+
+    - name: Build PrusaSlicer
+      run: |
+        cd PrusaSlicer
+        cmake --build . --config Release
+
+    - name: Upload PrusaSlicer artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: PrusaSlicer
+        path: PrusaSlicer/build/PrusaSlicer.exe
