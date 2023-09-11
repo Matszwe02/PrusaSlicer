@@ -136,6 +136,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 	std::vector<std::vector<const SurfaceFillParams*>> 	region_to_surface_params(layer.regions().size(), std::vector<const SurfaceFillParams*>());
     SurfaceFillParams									params;
     bool 												has_internal_voids = false;
+	const PrintObjectConfig&							object_config = layer.object()->config();
 	for (size_t region_id = 0; region_id < layer.regions().size(); ++ region_id) {
 		const LayerRegion  &layerm = *layer.regions()[region_id];
 		region_to_surface_params[region_id].assign(layerm.fill_surfaces().size(), nullptr);
@@ -147,15 +148,17 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		        FlowRole extrusion_role = surface.is_top() ? frTopSolidInfill : (surface.is_solid() ? frSolidInfill : frInfill);
 		        bool     is_bridge 	    = layer.id() > 0 && surface.is_bridge();
 		        params.extruder 	 = layerm.region().extruder(extrusion_role);
-		        params.pattern 		 = region_config.fill_pattern.value;
+		        params.pattern       = region_config.fill_pattern.value;
 		        params.density       = float(region_config.fill_density);
 
 		        if (surface.is_solid()) {
 		            params.density = 100.f;
+		            params.pattern = ipRectilinear;
 					//FIXME for non-thick bridges, shall we allow a bottom surface pattern?
-		            params.pattern = (surface.is_external() && ! is_bridge) ? 
-						(surface.is_top() ? region_config.top_fill_pattern.value : region_config.bottom_fill_pattern.value) :
-		                fill_type_monotonic(region_config.top_fill_pattern) ? ipMonotonic : ipRectilinear;
+					if (surface.is_external() && ! is_bridge)
+                        params.pattern = surface.is_top() ? region_config.top_fill_pattern.value : region_config.bottom_fill_pattern.value;
+					else if (! is_bridge)
+					    params.pattern = region_config.solid_fill_pattern.value;
 		        } else if (params.density <= 0)
 		            continue;
 
@@ -172,7 +175,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		        params.bridge = is_bridge || Fill::use_bridge_flow(params.pattern);
 				params.flow   = params.bridge ?
 					// Always enable thick bridges for internal bridges.
-					layerm.bridging_flow(extrusion_role, surface.is_bridge() && ! surface.is_external()) :
+					layerm.bridging_flow(extrusion_role, (surface.is_bridge() && !surface.is_external()) || object_config.thick_bridges) :
 					layerm.flow(extrusion_role, (surface.thickness == -1) ? layer.height : surface.thickness);
 
 				// Calculate flow spacing for infill pattern generation.
@@ -297,7 +300,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 	        if (internal_solid_fill == nullptr) {
 	        	// Produce another solid fill.
 		        params.extruder 	 = layerm.region().extruder(frSolidInfill);
-	            params.pattern 		 = fill_type_monotonic(layerm.region().config().top_fill_pattern) ? ipMonotonic : ipRectilinear;
+	            params.pattern       = layerm.region().config().solid_fill_pattern.value;
 	            params.density 		 = 100.f;
 		        params.extrusion_role = ExtrusionRole::InternalInfill;
 		        params.angle 		= float(Geometry::deg2rad(layerm.region().config().fill_angle.value));
@@ -520,6 +523,12 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
 			// Spacing is modified by the filler to indicate adjustments. Reset it for each expolygon.
 			f->spacing = surface_fill.params.spacing;
 			surface_fill.surface.expolygon = std::move(expoly);
+
+			if(surface_fill.params.bridge && surface_fill.surface.is_external() && surface_fill.params.density > 99.0){
+				params.density = layerm.region().config().bridge_density.get_abs_value(1.0);
+				params.dont_adjust = true;
+			}
+
             Polylines      polylines;
             ThickPolylines thick_polylines;
 			try {

@@ -463,14 +463,15 @@ static std::vector<std::string> s_Preset_print_options {
     "infill_extruder", "solid_infill_extruder", "support_material_extruder", "support_material_interface_extruder",
     "ooze_prevention", "standby_temperature_delta", "interface_shells", "extrusion_width", "first_layer_extrusion_width",
     "perimeter_extrusion_width", "external_perimeter_extrusion_width", "infill_extrusion_width", "solid_infill_extrusion_width",
-    "top_infill_extrusion_width", "support_material_extrusion_width", "infill_overlap", "infill_anchor", "infill_anchor_max", "bridge_flow_ratio",
+    "top_infill_extrusion_width", "support_material_extrusion_width", "infill_overlap", "infill_anchor", "infill_anchor_max", "bridge_flow_ratio", "bridge_density",
     "elefant_foot_compensation", "xy_size_compensation", "threads", "resolution", "gcode_resolution", "wipe_tower", "wipe_tower_x", "wipe_tower_y",
     "wipe_tower_width", "wipe_tower_cone_angle", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_bridging", "single_extruder_multi_material_priming", "mmu_segmented_region_max_width",
     "mmu_segmented_region_interlocking_depth", "wipe_tower_extruder", "wipe_tower_no_sparse_layers", "wipe_tower_extra_spacing", "compatible_printers", "compatible_printers_condition", "inherits",
     "perimeter_generator", "wall_transition_length", "wall_transition_filter_deviation", "wall_transition_angle",
     "wall_distribution_count", "min_feature_size", "min_bead_width",
     // SuperSlicer
-    "only_one_perimeter_top", "min_width_top_surface",
+    "only_one_perimeter_first_layer", "only_one_perimeter_top", "min_width_top_surface", "solid_fill_pattern",
+    "small_area_infill_flow_compensation", "small_area_infill_flow_compensation_max_length", "small_area_infill_flow_compensation_minimum_flow", "small_area_infill_flow_compensation_flow_dropoff",
 };
 
 static std::vector<std::string> s_Preset_filament_options {
@@ -487,7 +488,9 @@ static std::vector<std::string> s_Preset_filament_options {
     "filament_retract_length", "filament_retract_lift", "filament_retract_lift_above", "filament_retract_lift_below", "filament_retract_speed", "filament_deretract_speed", "filament_retract_restart_extra", "filament_retract_before_travel",
     "filament_retract_layer_change", "filament_wipe", "filament_retract_before_wipe", "filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange",
     // Profile compatibility
-    "filament_vendor", "compatible_prints", "compatible_prints_condition", "compatible_printers", "compatible_printers_condition", "inherits"
+    "filament_vendor", "compatible_prints", "compatible_prints_condition", "compatible_printers", "compatible_printers_condition", "inherits",
+    // SuperSlicer
+    "chamber_temperature",
 };
 
 static std::vector<std::string> s_Preset_machine_limits_options {
@@ -510,7 +513,9 @@ static std::vector<std::string> s_Preset_printer_options {
     "cooling_tube_length", "high_current_on_filament_swap", "parking_pos_retraction", "extra_loading_move", "max_print_height",
     "default_print_profile", "inherits",
     "remaining_times", "silent_mode",
-    "machine_limits_usage", "thumbnails", "thumbnails_format"
+    "machine_limits_usage", "thumbnails", "thumbnails_format",
+    // SuperSlicer
+    "init_z_rotate"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {

@@ -1458,6 +1458,7 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Quality (slower slicing)"));
         line = { L("Only one perimeter"), "" };
         line.label_path = category_path + "only-one-perimeter-top-bottom";
+        line.append_option(optgroup->get_option("only_one_perimeter_first_layer"));
         line.append_option(optgroup->get_option("only_one_perimeter_top"));
         line.append_option(optgroup->get_option("min_width_top_surface"));
         optgroup->append_line(line);
@@ -1490,6 +1491,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("fill_pattern", category_path + "fill-pattern");
         optgroup->append_single_option_line("infill_anchor", category_path + "fill-pattern");
         optgroup->append_single_option_line("infill_anchor_max", category_path + "fill-pattern");
+        optgroup->append_single_option_line("solid_fill_pattern", category_path + "solid-fill-pattern");
         optgroup->append_single_option_line("top_fill_pattern", category_path + "top-fill-pattern");
         optgroup->append_single_option_line("bottom_fill_pattern", category_path + "bottom-fill-pattern");
 
@@ -1512,6 +1514,12 @@ void TabPrint::build()
         optgroup->append_single_option_line("bridge_angle");
         optgroup->append_single_option_line("only_retract_when_crossing_perimeters");
         optgroup->append_single_option_line("infill_first");
+
+        optgroup = page->new_optgroup(L("Small Area Infill Flow Compensation"));
+        optgroup->append_single_option_line("small_area_infill_flow_compensation", category_path + "small-area-infill-flow-compensation");
+        optgroup->append_single_option_line("small_area_infill_flow_compensation_max_length", category_path + "small-area-infill-flow-compensation-max-length");
+        optgroup->append_single_option_line("small_area_infill_flow_compensation_minimum_flow", category_path + "small-area-infill-flow-compensation-minimum-flow");
+        optgroup->append_single_option_line("small_area_infill_flow_compensation_flow_dropoff", category_path + "small-area-infill-flow-compensation-flow-drop-off");
 
     page = add_options_page(L("Skirt and brim"), "skirt+brim");
         category_path = "skirt-and-brim_133969#";
@@ -1667,6 +1675,7 @@ void TabPrint::build()
 
         optgroup = page->new_optgroup(L("Flow"));
         optgroup->append_single_option_line("bridge_flow_ratio");
+        optgroup->append_single_option_line("bridge_density");
 
         optgroup = page->new_optgroup(L("Slicing"));
         optgroup->append_single_option_line("slice_closing_radius");
@@ -2078,6 +2087,7 @@ void TabFilament::build()
         optgroup = page->new_optgroup(L("Temperature"));
 
         create_line_with_near_label_widget(optgroup, "idle_temperature");
+        optgroup->append_single_option_line("chamber_temperature");
 
         Line line = { L("Nozzle"), "" };
         line.append_option(optgroup->get_option("first_layer_temperature"));
@@ -2497,6 +2507,7 @@ void TabPrinter::build_fff()
 
         optgroup->append_single_option_line("max_print_height");
         optgroup->append_single_option_line("z_offset");
+        optgroup->append_single_option_line("init_z_rotate");
 
         optgroup = page->new_optgroup(L("Capabilities"));
         ConfigOptionDef def;

@@ -459,6 +459,16 @@ void PrintConfigDef::init_fff_params()
     def->max = 300;
     def->set_default_value(new ConfigOptionInts { 0 });
 
+    def = this->add("chamber_temperature", coInts);
+    def->label = L("Chamber");
+    def->full_label = L("Chamber temperature");
+    def->tooltip = L("Chamber temperature. Note that this setting doesn't do anything, but you can access it in Start G-code, Tool change G-code and the other ones, like for other temperature settings.");
+    def->sidetext = L("°C");
+    def->min = 0;
+    def->max = 300;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts{ 0 });
+
     def = this->add("before_layer_gcode", coString);
     def->label = L("Before layer change G-code");
     def->tooltip = L("This custom code is inserted at every layer change, right before the Z move. "
@@ -518,6 +528,16 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
 
+    def = this->add("bridge_density", coPercent);
+    def->label = L("Bridge density");
+    def->category = L("Strength");
+    def->tooltip = L("Density of external bridges. 100% means solid bridge. Default is 100%.");
+    def->sidetext = L("%");
+    def->min = 10;
+    def->max = 100;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionPercent(100));
+
     def = this->add("bridge_fan_speed", coInts);
     def->label = L("Bridges fan speed");
     def->tooltip = L("This fan speed is enforced during all bridges and overhangs.");
@@ -538,6 +558,12 @@ void PrintConfigDef::init_fff_params()
     def->max = 2;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(1));
+
+    def = this->add("only_one_perimeter_first_layer", coBool);
+    def->label = L("On First layer");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Use only one perimeter on first layer, to give more space to the top infill pattern.");
+    def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("only_one_perimeter_top", coBool);
     def->label = L("On top surfaces");
@@ -862,7 +888,7 @@ void PrintConfigDef::init_fff_params()
     });
 
     // solid_fill_pattern is an obsolete equivalent to top_fill_pattern/bottom_fill_pattern.
-    def->aliases = { "solid_fill_pattern", "external_fill_pattern" };
+    def->aliases = { "external_fill_pattern" };
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("bottom_fill_pattern", coEnum);
@@ -872,6 +898,16 @@ void PrintConfigDef::init_fff_params()
     def->cli = "bottom-fill-pattern|external-fill-pattern|solid-fill-pattern";
     def->enum_def = Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone());
     def->aliases = def_top_fill_pattern->aliases;
+    def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
+
+    def = this->add("solid_fill_pattern", coEnum);
+    def->label = L("Solid fill pattern");
+    def->category = L("Infill");
+    def->tooltip = L("Fill pattern for solid (internal) infill. This only affects the solid not-visible layers. You should use rectilinear in most cases. You can try ironing for translucent material.");
+    def->cli = "solid-fill-pattern|external-fill-pattern";
+    def->enum_def = Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone());
+    def->aliases = def_top_fill_pattern->aliases;
+    def->mode = comExpert;
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
@@ -1968,6 +2004,38 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("small_area_infill_flow_compensation", coBool);
+    def->label = L("Enable Small Area Infill Flow Compensation");
+    def->tooltip = L("Enable flow compensation for small infill areas");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("small_area_infill_flow_compensation_max_length", coInt);
+    def->label = L("Maximum extrusion length");
+    def->tooltip = L("Extrusion length up to which the flow compensation applies. Typical range is 0-20mm.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->max = 100;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(17));
+
+    def = this->add("small_area_infill_flow_compensation_minimum_flow", coPercent);
+    def->label = L("Minimum flow percent");
+    def->tooltip = L("Limit flow reduction to this percentage of original flow");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->max = 100;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionPercent(30));
+
+    def = this->add("small_area_infill_flow_compensation_flow_dropoff", coInt);
+    def->label = L("Flow drop off");
+    def->tooltip = L("How exponential the flow drop off is (multiple of 2)");
+    def->min = 2;
+    def->max = 100;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(12));
 
     def = this->add("min_fan_speed", coInts);
     def->label = L("Min");
@@ -3352,6 +3420,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0));
 
+    def = this->add("init_z_rotate", coFloat);
+    def->label = L("Preferred orientation");
+    def->tooltip = L("Rotate objects around Z axis while adding them to the bed.");
+    def->sidetext = L("°");
+    def->min = -360;
+    def->max = 360;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.0));
+
     def = this->add("perimeter_generator", coEnum);
     def->label = L("Perimeter generator");
     def->category = L("Layers and Perimeters");
@@ -4593,6 +4670,10 @@ std::string validate(const FullPrintConfig &cfg)
     // --bottom-fill-pattern
     if (! print_config_def.get("bottom_fill_pattern")->has_enum_value(cfg.bottom_fill_pattern.serialize()))
         return "Invalid value for --bottom-fill-pattern";
+
+    // --solid-fill-pattern
+    if (!print_config_def.get("solid_fill_pattern")->has_enum_value(cfg.solid_fill_pattern.serialize()))
+        return "Invalid value for --solid-fill-pattern";
 
     // --fill-density
     if (fabs(cfg.fill_density.value - 100.) < EPSILON &&

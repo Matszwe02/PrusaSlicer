@@ -76,7 +76,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
     double fill_density = config->option<ConfigOptionPercent>("fill_density")->value;
 
     if (config->opt_bool("spiral_vase") &&
-        ! (config->opt_int("perimeters") == 1 && 
+        ! (config->opt_int("perimeters") == 1 &&
            config->opt_int("top_solid_layers") == 0 &&
            fill_density == 0 &&
            ! config->opt_bool("support_material") &&
@@ -102,7 +102,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
             new_conf.set_key_value("fill_density", new ConfigOptionPercent(0));
             new_conf.set_key_value("support_material", new ConfigOptionBool(false));
             new_conf.set_key_value("support_material_enforce_layers", new ConfigOptionInt(0));
-            new_conf.set_key_value("thin_walls", new ConfigOptionBool(false));            
+            new_conf.set_key_value("thin_walls", new ConfigOptionBool(false));
             fill_density = 0;
             support = false;
         }
@@ -117,7 +117,7 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
         }
     }
 
-    if (config->opt_bool("wipe_tower") && config->opt_bool("support_material") && 
+    if (config->opt_bool("wipe_tower") && config->opt_bool("support_material") &&
         // Organic supports are always synchronized with object layers as of now.
         config->opt_enum<SupportMaterialStyle>("support_material_style") != smsOrganic) {
         if (config->opt_float("support_material_contact_distance") == 0) {
@@ -187,8 +187,14 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
 
     if (config->option<ConfigOptionPercent>("fill_density")->value == 100) {
         const int fill_pattern = config->option<ConfigOptionEnum<InfillPattern>>("fill_pattern")->value;
-        if (bool correct_100p_fill = config->option_def("top_fill_pattern")->enum_def->enum_to_index(fill_pattern).has_value(); 
-            ! correct_100p_fill) {
+        bool correct_100p_fill = config->option_def("top_fill_pattern")->enum_def->enum_to_index(fill_pattern).has_value();
+        if (!correct_100p_fill) {
+            correct_100p_fill = config->option_def("bottom_fill_pattern")->enum_def->enum_to_index(fill_pattern).has_value();
+        }
+        if (!correct_100p_fill) {
+            correct_100p_fill = config->option_def("solid_fill_pattern")->enum_def->enum_to_index(fill_pattern).has_value();
+        }
+        if (!correct_100p_fill) {
             // get fill_pattern name from enum_labels for using this one at dialog_msg
             const ConfigOptionDef *fill_pattern_def = config->option_def("fill_pattern");
             assert(fill_pattern_def != nullptr);
@@ -241,7 +247,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool has_bottom_solid_infill = config->opt_int("bottom_solid_layers") > 0;
     bool has_solid_infill 		 = has_top_solid_infill || has_bottom_solid_infill;
     // solid_infill_extruder uses the same logic as in Print::extruders()
-    for (auto el : { "top_fill_pattern", "bottom_fill_pattern", "infill_first", "solid_infill_extruder",
+    for (auto el : { "top_fill_pattern", "bottom_fill_pattern", "solid_fill_pattern", "infill_first", "solid_infill_extruder",
                     "solid_infill_extrusion_width", "solid_infill_speed" })
         toggle_field(el, has_solid_infill);
 
@@ -282,7 +288,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool have_support_soluble = have_support_material && config->opt_float("support_material_contact_distance") == 0;
     auto support_material_style = config->opt_enum<SupportMaterialStyle>("support_material_style");
     for (auto el : { "support_material_style", "support_material_pattern", "support_material_with_sheath",
-                    "support_material_spacing", "support_material_angle", 
+                    "support_material_spacing", "support_material_angle",
                     "support_material_interface_pattern", "support_material_interface_layers",
                     "dont_support_bridges", "support_material_extrusion_width", "support_material_contact_distance",
                     "support_material_xy_spacing" })
@@ -291,11 +297,11 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("support_material_bottom_contact_distance", have_support_material && ! have_support_soluble);
     toggle_field("support_material_closing_radius", have_support_material && support_material_style == smsSnug);
 
-    const bool has_organic_supports = support_material_style == smsOrganic && 
-                                     (config->opt_bool("support_material") || 
+    const bool has_organic_supports = support_material_style == smsOrganic &&
+                                     (config->opt_bool("support_material") ||
                                       config->opt_int("support_material_enforce_layers") > 0);
     for (const std::string& key : { "support_tree_angle", "support_tree_angle_slow", "support_tree_branch_diameter",
-                                    "support_tree_branch_diameter_angle", "support_tree_branch_diameter_double_wall", 
+                                    "support_tree_branch_diameter_angle", "support_tree_branch_diameter_double_wall",
                                     "support_tree_tip_diameter", "support_tree_branch_distance", "support_tree_top_rate" })
         toggle_field(key, has_organic_supports);
 
@@ -346,8 +352,14 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("min_bead_width", have_arachne);
     toggle_field("thin_walls", !have_arachne);
 
+    toggle_field("only_one_perimeter_first_layer", !have_arachne);
     toggle_field("only_one_perimeter_top", !have_arachne);
     toggle_field("min_width_top_surface", have_perimeters && config->opt_bool("only_one_perimeter_top") && !have_arachne);
+
+    bool have_small_area_infill_flow_compensation = config->opt_bool("small_area_infill_flow_compensation");
+    toggle_field("small_area_infill_flow_compensation_max_length", have_small_area_infill_flow_compensation);
+    toggle_field("small_area_infill_flow_compensation_minimum_flow", have_small_area_infill_flow_compensation);
+    toggle_field("small_area_infill_flow_compensation_flow_dropoff", have_small_area_infill_flow_compensation);
 }
 
 void ConfigManipulation::update_print_sla_config(DynamicPrintConfig* config, const bool is_global_config/* = false*/)

@@ -597,6 +597,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionInt,                  bottom_solid_layers))
     ((ConfigOptionFloat,                bottom_solid_min_thickness))
     ((ConfigOptionFloat,                bridge_flow_ratio))
+    ((ConfigOptionPercent,              bridge_density))
     ((ConfigOptionFloat,                bridge_speed))
     ((ConfigOptionEnum<InfillPattern>,  top_fill_pattern))
     ((ConfigOptionEnum<InfillPattern>,  bottom_fill_pattern))
@@ -652,8 +653,10 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloatOrPercent,       top_solid_infill_speed))
     ((ConfigOptionBool,                 wipe_into_infill))
     // SuperSlicer
+    ((ConfigOptionBool,                 only_one_perimeter_first_layer))
     ((ConfigOptionBool,                 only_one_perimeter_top))
     ((ConfigOptionFloatOrPercent,       min_width_top_surface))
+    ((ConfigOptionEnum<InfillPattern>,  solid_fill_pattern))
 )
 
 PRINT_CONFIG_CLASS_DEFINE(
@@ -766,6 +769,11 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionString,              color_change_gcode))
     ((ConfigOptionString,              pause_print_gcode))
     ((ConfigOptionString,              template_custom_gcode))
+    // Small Area Infill Flow Compensation
+    ((ConfigOptionBool,                 small_area_infill_flow_compensation))
+    ((ConfigOptionInt,                  small_area_infill_flow_compensation_max_length))
+    ((ConfigOptionPercent,              small_area_infill_flow_compensation_minimum_flow))
+    ((ConfigOptionInt,                  small_area_infill_flow_compensation_flow_dropoff))
 )
 
 static inline std::string get_extrusion_axis(const GCodeConfig &cfg)
@@ -865,6 +873,9 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionFloats,             wiping_volumes_matrix))
     ((ConfigOptionFloats,             wiping_volumes_extruders))
     ((ConfigOptionFloat,              z_offset))
+    // SuperSlicer
+    ((ConfigOptionFloat,              init_z_rotate))
+    ((ConfigOptionInts,               chamber_temperature))
 )
 
 PRINT_CONFIG_CLASS_DERIVED_DEFINE0(

@@ -647,7 +647,8 @@ bool PrintObject::invalidate_state_by_config_options(
             // Brim is printed below supports, support invalidates brim and skirt.
             steps.emplace_back(posSupportMaterial);
         } else if (
-               opt_key == "only_one_perimeter_top") {
+               opt_key == "only_one_perimeter_first_layer"
+               || opt_key == "only_one_perimeter_top") {
             steps.emplace_back(posPerimeters);
         } else if (
                opt_key == "perimeters"
@@ -658,6 +659,12 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "infill_overlap"
             || opt_key == "external_perimeters_first") {
             steps.emplace_back(posPerimeters);
+        } else if (
+               opt_key == "small_area_infill_flow_compensation"
+            || opt_key == "small_area_infill_flow_compensation_max_length"
+            || opt_key == "small_area_infill_flow_compensation_minimum_flow"
+            || opt_key == "small_area_infill_flow_compensation_flow_dropoff") {
+            steps.emplace_back(posSlice);
         } else if (
                opt_key == "gap_fill_enabled"
             || opt_key == "gap_fill_speed") {
@@ -757,11 +764,13 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "infill_extruder"
             || opt_key == "solid_infill_extruder"
             || opt_key == "infill_extrusion_width"
-            || opt_key == "bridge_angle") {
+            || opt_key == "bridge_angle"
+            || opt_key == "bridge_density") {
             steps.emplace_back(posPrepareInfill);
         } else if (
                opt_key == "top_fill_pattern"
             || opt_key == "bottom_fill_pattern"
+            || opt_key == "solid_fill_pattern"
             || opt_key == "external_fill_link_max_length"
             || opt_key == "fill_angle"
             || opt_key == "infill_anchor"
