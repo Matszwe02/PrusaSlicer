@@ -1,0 +1,29 @@
+name: Build Test
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      #- name: Relocate workspace
+      #run: |
+      #  md c:\PrusaSlicer
+      #  xcopy . c:\PrusaSlicer /s/h
+    - name: Determine dependency hash
+      id: dephash
+      run: echo dephash=$(git rev-parse HEAD:deps) >> $GITHUB_OUTPUT
+    - name: Determine checkout directory
+      id: cwd
+      run: echo cwd=$(cd) >> $GITHUB_OUTPUT
+    - name: Run the automatic build script
+      run: |
+        dir > dir.list
+        type dir.list
+        D:\a\PrusaSlicer-MLEF\PrusaSlicer-MLEF\build_win.bat -d=..\PrusaSlicer-deps -r=none -v 17
+        echo $GITHUB_WORKSPACE
